@@ -15,7 +15,14 @@ class Job(models.Model):
     exit_code = models.SmallIntegerField(null=True, blank=True)
 
 
+def artefact_path(instance, filename):
+    return '/artefacts/job_{job_id}/{filename}'.format(
+        job_id=instance.job.pk,
+        filename=filename
+    )
+
+
 class Artefact(models.Model):
     job = models.ForeignKey('Job', related_name='artefacts')
     name = models.CharField(max_length=255, null=True, blank=True)
-    file = models.FileField()
+    file = models.FileField(upload_to=artefact_path)
