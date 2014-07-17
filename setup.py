@@ -3,7 +3,7 @@ from distutils.core import setup
 
 setup(
     name='django-director',
-    version='0.1.2',
+    version='0.1.3',
     packages=[
         'director',
     ],

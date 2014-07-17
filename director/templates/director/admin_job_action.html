@@ -1,0 +1,5 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls %}
+
+<p>Your job status is: {{ job.status }}</p>
+<p>You can follow the progress of your job <a href="{% url opts|admin_urlname:'edit' %}">here</a>.

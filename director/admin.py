@@ -1,5 +1,9 @@
-from django.contrib import admin
+from functools import wraps
 
+from django.contrib import admin
+from django.shortcuts import render_to_response
+
+from .job import run_job
 from .models import Job, Artefact
 
 
@@ -17,13 +21,27 @@ class JobAdmin(admin.ModelAdmin):
 
     list_display = ('command', 'command_args', 'command_kwargs', 'status')
 
-    def status(self, obj):
-        if obj.exit_code is None:
-            return 'Processing...'
-        elif obj.exit_code == 0:
-            return 'Finished successfully'
-        else:
-            return 'Error'
-
 
 admin.site.register(Job, JobAdmin)
+
+
+def action_factory(action):
+    """
+    Converts your existing admin action into a Director background action
+
+    Example:
+
+        background_action = action_factory(download_as_csv)
+        admin.site.add_action(background_action, 'download_as_csv')
+    """
+    @wraps(action)
+    def proxy_action(*args, **kwargs):
+        job = run_job(f=action, *args, **kwargs)
+        return render_to_response(
+            'director/admin_job_action.html',
+            {
+                'job': job,
+                'opts': job._meta,
+            }
+        )
+    return proxy_action

@@ -1,6 +1,6 @@
 from copy import copy
 from datetime import datetime
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from StringIO import StringIO
 import sys
 
@@ -13,7 +13,7 @@ from .signals import new_artefact
 
 def command_name(f, *args, **kwargs):
     """
-
+    make a descriptive name for the job command
     """
     command_args = copy(args)
     command_kwargs = copy(kwargs)
@@ -40,16 +40,17 @@ def command_name(f, *args, **kwargs):
     return name, command_args, command_kwargs
 
 
-def worker(f, *args, **kwargs):
+def worker(f, q, f_args, f_kwargs):
     """
     this function is run in the sub process
     """
-    command, command_args, command_kwargs = command_name(f, *args, **kwargs)
+    cmd, cmd_args, cmd_kwargs = command_name(f, *f_args, **f_kwargs)
     job = Job.objects.create(
-        command=command,
-        command_args=command_args,
-        command_kwargs=command_kwargs,
+        command=cmd,
+        command_args=cmd_args,
+        command_kwargs=cmd_kwargs,
     )
+    q.put(job.pk)
 
     @receiver(new_artefact)
     def register_artefact(sender, **kwargs):
@@ -63,7 +64,7 @@ def worker(f, *args, **kwargs):
     sys.stdout = stdout = StringIO()
     sys.stderr = stderr = StringIO()
     try:
-        call_command(command, *args, **kwargs)
+        f(*f_args, **f_kwargs)
     except SystemExit as e:
         exit_code = e.message
     except BaseException as e:
@@ -84,5 +85,17 @@ def worker(f, *args, **kwargs):
 
 
 def run_job(f=call_command, *args, **kwargs):
-    p = Process(target=f, args=args, kwargs=kwargs)
+    """
+    This is the main public function to call
+    """
+    q = Queue()
+    kwargs = {
+        'f': f,
+        'q': q,
+        'f_args': args,
+        'f_kwargs': kwargs,
+    }
+    p = Process(target=worker, kwargs=kwargs)
     p.start()
+    job_id = q.get(block=True)
+    return Job.objects.get(pk=job_id)

@@ -14,6 +14,14 @@ class Job(models.Model):
     stderr = models.TextField(null=True, blank=True)
     exit_code = models.SmallIntegerField(null=True, blank=True)
 
+    def status(self):
+        if self.exit_code is None:
+            return 'Processing...'
+        elif self.exit_code == 0:
+            return 'Finished successfully'
+        else:
+            return 'Error'
+
 
 def artefact_path(instance, filename):
     return '/artefacts/job_{job_id}/{filename}'.format(
