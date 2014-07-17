@@ -3,7 +3,7 @@ from distutils.core import setup
 
 setup(
     name='django-director',
-    version='0.1.0',
+    version='0.1.1',
     packages=[
         'director',
     ],
@@ -12,4 +12,7 @@ setup(
     author="Anentropic",
     author_email="ego@anentropic.com",
     url="https://github.com/anentropic/django-director",
+    install_requires=[
+        "django-jsonfield >= 0.9",
+    ],
 )
