@@ -5,6 +5,7 @@ from StringIO import StringIO
 import sys
 
 from django.core.management import call_command
+from django.db import transaction
 from django.dispatch import receiver
 
 from .models import Job, Artefact
@@ -45,12 +46,13 @@ def worker(f, q, f_args, f_kwargs):
     this function is run in the sub process
     """
     cmd, cmd_args, cmd_kwargs = command_name(f, *f_args, **f_kwargs)
-    job = Job.objects.create(
-        command=cmd,
-        command_args=cmd_args,
-        command_kwargs=cmd_kwargs,
-    )
-    q.put(job.pk)
+    with transaction.commit_on_success():
+        job = Job.objects.create(
+            command=cmd,
+            command_args=[unicode(arg) for arg in cmd_args],
+            command_kwargs={key: unicode(val) for key, val in cmd_kwargs.items()},
+        )
+    q.put(job)
 
     @receiver(new_artefact)
     def register_artefact(sender, **kwargs):
@@ -97,5 +99,4 @@ def run_job(f=call_command, *args, **kwargs):
     }
     p = Process(target=worker, kwargs=kwargs)
     p.start()
-    job_id = q.get(block=True)
-    return Job.objects.get(pk=job_id)
+    return q.get(block=True)

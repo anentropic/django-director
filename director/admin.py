@@ -36,8 +36,7 @@ def action_factory(action):
     """
     @wraps(action)
     def proxy_action(*args, **kwargs):
-        kwargs['f'] = action
-        job = run_job(*args, **kwargs)
+        job = run_job(action, *args, **kwargs)
         return render_to_response(
             'director/admin_job_action.html',
             {
