@@ -51,6 +51,13 @@ def worker(f, *args, **kwargs):
         command_kwargs=command_kwargs,
     )
 
+    @receiver(new_artefact)
+    def register_artefact(sender, **kwargs):
+        Artefact.objects.create(
+            job=job,
+            **kwargs
+        )
+
     orig_stdout = sys.stdout
     orig_stderr = sys.stderr
     sys.stdout = stdout = StringIO()
@@ -74,14 +81,6 @@ def worker(f, *args, **kwargs):
         job.exit_code = exit_code
         job.ended_at = datetime.now()
         job.save()
-
-
-@receiver(new_artefact)
-def register_artefact(sender, **kwargs):
-    Artefact.objects.create(
-        job=sender,
-        **kwargs
-    )
 
 
 def run_job(f=call_command, *args, **kwargs):
