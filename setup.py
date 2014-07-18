@@ -9,6 +9,8 @@ setup(
     ],
     license='MIT',
     long_description=open('pypi.rst').read(),
+    description=('Run manage.py commands in the '
+                 'background and collect artefacts.'),
     author="Anentropic",
     author_email="ego@anentropic.com",
     url="https://github.com/anentropic/django-director",
