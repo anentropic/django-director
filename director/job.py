@@ -7,6 +7,7 @@ import sys
 from django.core.management import call_command
 from django.db import transaction
 from django.dispatch import receiver
+from django.http import HttpRequest
 
 from .models import Job, Artefact
 from .signals import new_artefact
@@ -41,6 +42,17 @@ def command_name(f, *args, **kwargs):
     return name, command_args, command_kwargs
 
 
+def serialize(obj):
+    if isinstance(obj, HttpRequest):
+        return 'HttpRequest {method} {path}{querystring}'.format(
+            method=obj.method,
+            path=obj.path_info,
+            querystring=obj.META['QUERY_STRING'],
+        )
+    else:
+        return unicode(obj)
+
+
 def worker(f, q, f_args, f_kwargs):
     """
     this function is run in the sub process
@@ -49,8 +61,12 @@ def worker(f, q, f_args, f_kwargs):
     with transaction.commit_on_success():
         job = Job.objects.create(
             command=cmd,
-            command_args=[unicode(arg) for arg in cmd_args],
-            command_kwargs={key: unicode(val) for key, val in cmd_kwargs.items()},
+            command_args=[
+                serialize(arg) for arg in cmd_args
+            ],
+            command_kwargs={
+                key: serialize(val) for key, val in cmd_kwargs.items()
+            },
         )
     q.put(job)
 
