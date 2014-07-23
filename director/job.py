@@ -82,7 +82,7 @@ def worker(f, q, f_args, f_kwargs):
     sys.stdout = stdout = StringIO()
     sys.stderr = stderr = StringIO()
     try:
-        f(*f_args, **f_kwargs)
+        result = f(*f_args, **f_kwargs)
     except SystemExit as e:
         exit_code = e.message
     except BaseException as e:
@@ -100,6 +100,13 @@ def worker(f, q, f_args, f_kwargs):
         job.exit_code = exit_code
         job.ended_at = datetime.now()
         job.save()
+
+    # TODO:
+    # save `result` as Artefact file
+    Artefact.objects.create(
+        job=job,
+        **kwargs
+    )
 
 
 def run_job(f=call_command, *args, **kwargs):
